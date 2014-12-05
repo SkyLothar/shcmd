@@ -1,8 +1,8 @@
 # -*- coding: utf8 -*-
 
+import contextlib
 import os
 import shlex
-import subprocess
 
 from . import compat
 
@@ -24,14 +24,24 @@ def split_args(cmd_args):
     return args_list
 
 
+@contextlib.contextmanager
+def cd(cd_path):
+    oricwd = os.getcwd()
+    try:
+        os.chdir(cd_path)
+        yield
+    finally:
+        os.chdir(oricwd)
+
+
 class CmdRequest(object):
     def __init__(self, cmd, cwd=None):
         self._raw = cmd
         self._cmd = split_args(cmd)
-        self._cwd = cwd or os.getcwd()
+        self._cwd = os.path.realpath(cwd or os.getcwd())
 
     def __str__(self):
-        return "<CmdRequest {0}@{1}>".format(self._raw, self.cwd)
+        return "<CmdRequest ({0})@{1}>".format(self._raw, self.cwd)
 
     @property
     def raw(self):
@@ -44,9 +54,3 @@ class CmdRequest(object):
     @property
     def cwd(self):
         return self._cwd
-
-    def run(self):
-        pass
-
-    def streaming(self):
-        pass
