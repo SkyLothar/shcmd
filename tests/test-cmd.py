@@ -8,27 +8,27 @@ import nose
 import shcmd.cmd
 
 
-def test_asc_split_args():
+def test_asc_expand_args():
     correct = ["/bin/bash", "echo", "上海崇明岛"]
 
     # str
-    result = shcmd.cmd.split_args("/bin/bash echo 上海崇明岛")
+    result = shcmd.cmd.expand_args("/bin/bash echo 上海崇明岛")
     nose.tools.eq_(result, correct, "str test failed")
 
     # unicode
-    result = shcmd.cmd.split_args(u"/bin/bash echo 上海崇明岛")
+    result = shcmd.cmd.expand_args(u"/bin/bash echo 上海崇明岛")
     nose.tools.eq_(result, correct, "unicode test failed")
 
     # bytes
-    result = shcmd.cmd.split_args(u"/bin/bash echo 上海崇明岛".encode("utf8"))
+    result = shcmd.cmd.expand_args(u"/bin/bash echo 上海崇明岛".encode("utf8"))
     nose.tools.eq_(result, correct, "bytes test failed")
 
     # list
-    result = shcmd.cmd.split_args(["/bin/bash", "echo", "上海崇明岛"])
+    result = shcmd.cmd.expand_args(["/bin/bash", "echo", "上海崇明岛"])
     nose.tools.eq_(result, correct, "list test failed")
 
     # tuple
-    result = shcmd.cmd.split_args(("/bin/bash", "echo", "上海崇明岛"))
+    result = shcmd.cmd.expand_args(("/bin/bash", "echo", "上海崇明岛"))
     nose.tools.eq_(result, correct, "tuple test failed")
 
 

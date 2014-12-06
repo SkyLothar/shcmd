@@ -87,6 +87,7 @@ if is_py2:
     str = unicode
     basestring = basestring
     numeric_types = (int, long, float)
+    empty_bytes = ""
 
 elif is_py3:
     from io import StringIO
@@ -96,3 +97,4 @@ elif is_py3:
     bytes = bytes
     basestring = (str, bytes)
     numeric_types = (int, float)
+    empty_bytes = b""
