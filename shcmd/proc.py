@@ -1,118 +1,95 @@
 # -*- coding: utf8 -*-
 
 import contextlib
+import io
 import logging
 import subprocess
 import threading
+import time
+
+from .errors import ShCmdError
 
 
 logger = logging.getLogger(__name__)
 
+LINE_CHUNK_SIZE = 1024
 
-class CmdProc(object):
+
+def kill_proc(proc, cmd, started_at):
+    """kill proc if started
+    returns True if proc is killed actually
+    """
+    if proc.returncode is None:
+        proc.kill()
+
+
+class Proc(object):
     """
     Simple Wrapper around the built-in subprocess module
 
     use threading.Timer to add timeout option
     easy interface for get streamed output of stdout
     """
-    def __init__(self, request, timeout, decode_unicode):
-        self._request = request
-        self._timer = threading.Timer(timeout, self.kill)
+    codec = "utf8"
 
-        self._codec = decode_unicode
-        self._return_code = None
+    def __init__(self, cmd, cwd, env, timeout):
+        self._cmd = cmd
+        self._cwd = cwd
+        self._env = env
+        self._timeout = timeout
+        self._return_code = self._stdout = self._stderr = None
 
-        if decode_unicode is None:
-            # raw bytes
-            self._stdout = self._stderr = b""
-        else:
-            # decode to string
-            self._stdout = self._stderr = ""
+    @property
+    def cmd(self):
+        return self._cmd[:]
+
+    @property
+    def cwd(self):
+        return self._cwd
+
+    @property
+    def env(self):
+        return self._env.copy()
+
+    @property
+    def timeout(self):
+        return self._timeout
 
     @property
     def stdout(self):
-        """Proc's stdout"""
-        return self._stdout
+        """proc's stdout."""
+        return self._stdout.decode(self.codec)
 
     @property
     def stderr(self):
-        """Proc's stderr"""
-        return self._stderr
+        """proc's stderr."""
+        return self._stderr.decode(self.codec)
 
     @property
-    def request(self):
-        """The original request"""
-        return self._request
+    def return_code(self):
+        return self._return_code
 
-    def kill(self):
-        """Kill proc if started
-        Returns True if proc is killed actually
-        """
-        if self.proc is None:
-            logger.warn("{0} not started".format(self))
-        elif self.proc.returncode is not None:
-            logger.warn("{0} ended".format(self))
-        else:
-            self.proc.kill()
-            logger.info("{0} killed".format(self))
+    @property
+    def content(self):
+        return self._stdout
 
-    def decode_unicode(self, raw_bytes):
-        """Decode bytes into unicode
-        Returns unicode
-        """
-        if self._codec is None:
-            return raw_bytes
-        else:
-            return raw_bytes.decode(self._codec)
+    @property
+    def ok(self):
+        return self.return_code == 0
 
-    def block(self):
-        """Blocked executation
-        Return (stdout, stderr) tuple
-
-        :param decode_unicode: (default is False, not decode),
-            set decode_unicode to "utf8" so stdout/stderr willl be decoded
-
-        Usage::
-
-            >>> stdout, stderr = proc.block(1024)
-            >>> stdout == proc.stdout, "stdout output error"
-
-        """
-        with self.run_with_timeout() as proc:
-            stdout, stderr = proc.communicate()
-
-        self._stdout = self.decode_unicode(stdout)
-        self._stderr = self.decode_unicode(stderr)
-        return self.stdout, self.stderr
-
-    def stream(self, chunk_size=1):
-        """Streamed yield stdout
-        Return a generator
-
-        :param decode_unicode: (default is False, not decode),
-            set decode_unicode to "utf8" so stdout/stderr willl be decoded
-
-        Usage::
-
-            >>> all_data = ""
-            >>> for data in proc.stream(1024):
-            ...     all_data += data
-            ...
-            >>> assert all_data == proc.stdout, "stdout output error"
-
-        """
-        with self.run_with_timeout() as proc:
-            while proc.poll() is None:
-                data = self.decode_unicode(proc.stdout.read(chunk_size))
-                self._stdout += data
-                yield self.decode_unicode(data)
-
-        self._stderr = self.decode_unicode(proc.stderr)
+    def raise_for_error(self):
+        if not self.ok:
+            tip = "running {0} @<{1}> error, return code {2}".format(
+                " ".join(self.cmd), self.cwd, self.return_code
+            )
+            logger.error("{0}\nstdout:{1}\nstderr:{2}\n".format(
+                tip, self.stdout, self.stderr
+            ))
+            raise ShCmdError(tip)
 
     @contextlib.contextmanager
-    def run_with_timeout(self):
-        """Execute this proc with timeout
+    def _stream(self):
+        """Execute subprocess with timeout
 
         Usage::
 
@@ -122,17 +99,71 @@ class CmdProc(object):
             >>> assert cmd_proc.proc.return_code == 0, "proc exec failed"
 
         """
-        timer = threading.Timer(self.kill, self.timeout)
+        timer = None
         try:
             proc = subprocess.Popen(
-                self.request.cmd,
+                self.cmd, cwd=self.cwd, env=self.env,
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                cwd=self.request.cwd,
-                env=self.request.env
+                stderr=subprocess.PIPE
+            )
+            timer = threading.Timer(
+                self.timeout,
+                kill_proc, [proc, self.cmd, time.time()]
             )
             timer.start()
             yield proc
-            self._return_code = proc.returncode
         finally:
-            timer.cancel()
+            if timer:
+                timer.cancel()
+
+    def iter_lines(self):
+        remain = ""
+        for data in self.iter_content(LINE_CHUNK_SIZE):
+            line_break_found = data[:1] in ("\n", "\r")
+            lines = data.decode(self.codec).splitlines()
+            lines[0] = remain + lines[0]
+            if not line_break_found:
+                remain = lines.pop()
+            for line in lines:
+                yield line
+
+    def iter_content(self, chunk_size=1):
+        if self.return_code is not None:
+            stdout = io.BytesIO(self._stdout)
+            data = stdout.read(chunk_size)
+            while data:
+                yield data
+                data = stdout.read(chunk_size)
+        else:
+            data = b''
+            started_at = time.time()
+            with self._stream() as proc:
+                while proc.poll() is None:
+                    chunk = proc.stdout.read(chunk_size)
+                    yield chunk
+                    data += chunk
+
+                if proc.returncode == -9:
+                    raise subprocess.TimeoutExpired(
+                        proc.args, time.time() - started_at
+                    )
+
+                chunk = proc.stdout.read(chunk_size)
+                while chunk:
+                    yield chunk
+                    chunk = proc.stdout.read(chunk_size)
+
+            self._return_code = proc.returncode
+            self._stderr = proc.stderr.read()
+            self._stdout = data
+
+    def block(self):
+        """blocked executation."""
+        if self._return_code is None:
+            proc = subprocess.Popen(
+                self.cmd, cwd=self.cwd, env=self.env,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+            self._stdout, self._stderr = proc.communicate(timeout=self.timeout)
+            self._return_code = proc.returncode
