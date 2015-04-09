@@ -144,7 +144,6 @@ class Proc(object):
         """yields stdout text, line by line."""
         remain = ""
         for data in self.iter_content(LINE_CHUNK_SIZE):
-            print(repr(data).center(50, "x"))
             line_break_found = data[-1] in (b"\n", b"\r")
             lines = data.decode(self.codec).splitlines()
             lines[0] = remain + lines[0]
@@ -173,7 +172,8 @@ class Proc(object):
             with self._stream() as proc:
                 while proc.poll() is None:
                     chunk = proc.stdout.read(chunk_size)
-                    print("chunk is {0}".format(repr(chunk)))
+                    if not chunk:
+                        continue
                     yield chunk
                     data += chunk
 
@@ -185,7 +185,6 @@ class Proc(object):
                 chunk = proc.stdout.read(chunk_size)
                 while chunk:
                     yield chunk
-                    print("end block chunk is {0}".format(repr(chunk)))
                     data += chunk
                     chunk = proc.stdout.read(chunk_size)
 
