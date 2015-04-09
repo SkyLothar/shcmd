@@ -144,6 +144,10 @@ class Proc(object):
         """yields stdout text, line by line."""
         remain = ""
         for data in self.iter_content(LINE_CHUNK_SIZE):
+            print("#"*20)
+            print(data)
+            print("#"*20)
+
             line_break_found = data[-1] in (b"\n", b"\r")
             lines = data.decode(self.codec).splitlines()
             lines[0] = remain + lines[0]
