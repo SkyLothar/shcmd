@@ -1,2 +1,2 @@
-class CmdError(Exception):
+class ShCmdError(Exception):
     pass

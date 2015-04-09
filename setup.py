@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 
-__version__ = ""
-__author__ = ""
-__email__ = ""
-__url__ = ""
-
-
 import os
 import sys
 
 from codecs import open
+
+__version__ = "0.1.0"
+__author__ = "SkyLothar"
+__email__ = "allothar@gmail.com"
+__url__ = "https://github.com/skylothar/shcmd"
+
 
 try:
     import setuptools
@@ -25,7 +25,7 @@ if sys.argv[-1] == "publish":
 packages = ["shcmd"]
 
 
-with open("README.md", "r", "utf-8") as f:
+with open("README.rst", "r", "utf-8") as f:
     readme = f.read()
 
 with open("tests/requirements.txt", "r", "utf-8") as f:
@@ -35,33 +35,31 @@ with open("tests/requirements.txt", "r", "utf-8") as f:
 setuptools.setup(
     name="shcmd",
     version=__version__,
-    description="",
+    description="simple command-line wrapper",
     long_description=readme,
     author=__author__,
     author_email=__email__,
     url=__url__,
     packages=packages,
     package_data={
-        "": ["LICENSE", "NOTICE"]
+        "": ["LICENSE"]
     },
     package_dir={
         "shcmd": "shcmd"
     },
     include_package_data=True,
-    install_requires=[],
     license="Apache 2.0",
     zip_safe=False,
-    classifiers=(
-        "Development Status :: 5 - Production/Stable",
+    classifiers=[
+        "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
         "Natural Language :: English",
         "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.3",
         "Programming Language :: Python :: 3.4"
-
-    ),
+    ],
     setup_requires=["nose >= 1.0"],
     tests_require=tests_require,
     test_suite="nose.collector"

@@ -1,31 +1,21 @@
 # -*- coding: utf8 -*-
 
 import contextlib
+import functools
 import os
-import shlex
-
-from . import compat
-
-
-def split_args(cmd_args):
-    """Split command args to args list
-    Returns a list of args
-
-    :param cmd_args: command args, can be tuple, list or str
-    """
-    if isinstance(cmd_args, (tuple, list)):
-        args_list = list(cmd_args)
-    elif compat.is_py2 and isinstance(cmd_args, compat.str):
-        args_list = shlex.split(cmd_args.encode("utf8"))
-    elif compat.is_py3 and isinstance(cmd_args, compat.bytes):
-        args_list = shlex.split(cmd_args.decode("utf8"))
-    else:
-        args_list = shlex.split(cmd_args)
-    return args_list
 
 
 @contextlib.contextmanager
 def cd(cd_path):
+    """cd to target dir when running in this block
+
+    :param cd_path: dir to cd into
+
+    Usage::
+
+        >>> with cd("/tmp"):
+        ...     print("we are in /tmp now")
+    """
     oricwd = os.getcwd()
     try:
         os.chdir(cd_path)
@@ -34,23 +24,23 @@ def cd(cd_path):
         os.chdir(oricwd)
 
 
-class CmdRequest(object):
-    def __init__(self, cmd, cwd=None):
-        self._raw = cmd
-        self._cmd = split_args(cmd)
-        self._cwd = os.path.realpath(cwd or os.getcwd())
+def cd_to(path):
+    """make a generator like cd, but use it for function
 
-    def __str__(self):
-        return "<CmdRequest ({0})@{1}>".format(self._raw, self.cwd)
+    Usage::
 
-    @property
-    def raw(self):
-        return self._raw
+        >>> @cd_to("/")
+        ... def say_where():
+        ...     print(os.getcwd())
+        ...
+        >>> say_where()
+        /
 
-    @property
-    def cmd(self):
-        return self._cmd[:]
-
-    @property
-    def cwd(self):
-        return self._cwd
+    """
+    def cd_to_decorator(func):
+        @functools.wraps(func)
+        def _cd_and_exec(*args, **kwargs):
+            with cd(path):
+                return func(*args, **kwargs)
+        return _cd_and_exec
+    return cd_to_decorator
