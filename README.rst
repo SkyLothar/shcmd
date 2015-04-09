@@ -9,10 +9,10 @@ If you need piped subprocesses, give envoy_ a try.
 
 .. image:: https://travis-ci.org/SkyLothar/shcmd.svg?branch=master
     :target: https://travis-ci.org/SkyLothar/shcmd
-.. image:: https://travis-ci.org/SkyLothar/shcmd.svg?branch=master
-    :target: https://travis-ci.org/SkyLothar/shcmd
 .. image:: https://img.shields.io/coveralls/SkyLothar/shcmd/master.svg
     :target: https://coveralls.io/r/SkyLothar/shcmd
+.. image:: https://pypip.in/version/shcmd/badge.svg?style=flat
+    :target: https://pypi.python.org/pypi/shcmd
 
 Usage
 ^^^^^^
