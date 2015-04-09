@@ -33,6 +33,22 @@ class Proc(object):
     codec = "utf8"
 
     def __init__(self, cmd, cwd, env, timeout):
+        """
+        :param cmd: the command
+        :param cwd: the command should be running under `cwd` dir
+        :param env: the environment variable
+        :param timeout: the command should return in `timeout` seconds
+
+        Usage::
+
+            >>> p = Proc("ls", "/", timeout=1)
+            >>> p.block()
+            >>> p.ok
+            True
+            >>> type(p.stdout)
+            <class 'str'>
+
+        """
         self._cmd = cmd
         self._cwd = cwd
         self._env = env
@@ -41,18 +57,22 @@ class Proc(object):
 
     @property
     def cmd(self):
+        """the proc's command."""
         return self._cmd[:]
 
     @property
     def cwd(self):
+        """the proc's execuation dir."""
         return self._cwd
 
     @property
     def env(self):
+        """the proc's environment setting."""
         return self._env.copy()
 
     @property
     def timeout(self):
+        """the proc's timeout setting."""
         return self._timeout
 
     @property
@@ -67,17 +87,21 @@ class Proc(object):
 
     @property
     def return_code(self):
+        """proc's return_code"""
         return self._return_code
 
     @property
     def content(self):
+        """the output gathered in stdout in bytes format"""
         return self._stdout
 
     @property
     def ok(self):
+        """`True` if proc's return_code is 0"""
         return self.return_code == 0
 
     def raise_for_error(self):
+        """raise `ShCmdError` if the proc's return_code is not 0"""
         if not self.ok:
             tip = "running {0} @<{1}> error, return code {2}".format(
                 " ".join(self.cmd), self.cwd, self.return_code
@@ -89,7 +113,7 @@ class Proc(object):
 
     @contextlib.contextmanager
     def _stream(self):
-        """Execute subprocess with timeout
+        """execute subprocess with timeout
 
         Usage::
 
@@ -117,12 +141,13 @@ class Proc(object):
                 timer.cancel()
 
     def iter_lines(self):
+        """yields stdout text, line by line."""
         remain = ""
         for data in self.iter_content(LINE_CHUNK_SIZE):
-            line_break_found = data[-1] in ("\n", "\r")
-            lines = data.decode(self.codec).splitlines()
-            if not lines:
+            if not data:
                 continue
+            line_break_found = data[-1] in (b"\n", b"\r")
+            lines = data.decode(self.codec).splitlines()
             lines[0] = remain + lines[0]
             if not line_break_found:
                 remain = lines.pop()
@@ -130,6 +155,11 @@ class Proc(object):
                 yield line
 
     def iter_content(self, chunk_size=1):
+        """
+        yields stdout data, chunk by chunk
+
+        :param chunk_size: size of each chunk (in bytes)
+        """
         if self.return_code is not None:
             stdout = io.BytesIO(self._stdout)
             data = stdout.read(chunk_size)
