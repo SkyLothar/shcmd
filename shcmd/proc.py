@@ -173,6 +173,7 @@ class Proc(object):
             with self._stream() as proc:
                 while proc.poll() is None:
                     chunk = proc.stdout.read(chunk_size)
+                    print("chunk is {0}".format(repr(chunk)))
                     yield chunk
                     data += chunk
 
@@ -184,6 +185,7 @@ class Proc(object):
                 chunk = proc.stdout.read(chunk_size)
                 while chunk:
                     yield chunk
+                    print("end block chunk is {0}".format(repr(chunk)))
                     data += chunk
                     chunk = proc.stdout.read(chunk_size)
 
