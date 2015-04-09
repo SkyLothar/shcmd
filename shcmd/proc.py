@@ -119,8 +119,10 @@ class Proc(object):
     def iter_lines(self):
         remain = ""
         for data in self.iter_content(LINE_CHUNK_SIZE):
-            line_break_found = data[:1] in ("\n", "\r")
+            line_break_found = data[-1] in ("\n", "\r")
             lines = data.decode(self.codec).splitlines()
+            if not lines:
+                continue
             lines[0] = remain + lines[0]
             if not line_break_found:
                 remain = lines.pop()

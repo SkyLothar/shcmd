@@ -60,7 +60,7 @@ class TestRun(object):
         # run again
         with mock.patch("subprocess.Popen") as mock_p:
             for d in proc.iter_content(100):
-                tools.eq_(len(d), 100)
+                tools.ok_(len(d) <= 100)
             tools.eq_(mock_p.mock_calls, [])
 
     def test_iter_lines(self):
