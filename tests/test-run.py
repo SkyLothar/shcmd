@@ -70,6 +70,7 @@ class TestRun(object):
         random_files = set(
             os.path.basename(name) for name in self.ramdom_files
         )
+        print(random_files, ls_result)
         tools.ok_(random_files.issubset(ls_result))
         tools.eq_(proc.return_code, 0)
         proc.raise_for_error()
