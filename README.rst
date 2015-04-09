@@ -17,7 +17,7 @@ If you need piped subprocesses, give envoy_ a try.
 Usage
 ^^^^^^
 
-.. code-block::python
+.. code-block:: python
 
   import shcmd
 
