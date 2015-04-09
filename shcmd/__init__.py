@@ -5,7 +5,11 @@ __url__ = "https://github.com/skylothar/shcmd"
 
 import os
 
+__all__ = ["cd", "cd_to", "run", "tar_generator"]
+
+from .cmd import cd, cd_to
 from .proc import Proc
+from .tar import tar_generator
 from .utils import expand_args
 
 
