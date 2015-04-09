@@ -78,7 +78,8 @@ class TestRun(object):
         with mock.patch("subprocess.Popen") as mock_p:
             ls_result = set(name for name in proc.iter_lines())
             random_files = set(
-                os.path.basename(name) for name in self.ramdom_files
+                os.path.basename(name)
+                for name in self.ramdom_files
             )
             tools.ok_(random_files.issubset(ls_result))
             tools.eq_(mock_p.mock_calls, [])

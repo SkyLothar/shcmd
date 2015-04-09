@@ -144,8 +144,6 @@ class Proc(object):
         """yields stdout text, line by line."""
         remain = ""
         for data in self.iter_content(LINE_CHUNK_SIZE):
-            if not data:
-                continue
             line_break_found = data[-1] in (b"\n", b"\r")
             lines = data.decode(self.codec).splitlines()
             lines[0] = remain + lines[0]
@@ -183,6 +181,7 @@ class Proc(object):
                 chunk = proc.stdout.read(chunk_size)
                 while chunk:
                     yield chunk
+                    data += chunk
                     chunk = proc.stdout.read(chunk_size)
 
             self._return_code = proc.returncode
