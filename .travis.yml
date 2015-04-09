@@ -1,0 +1,14 @@
+language: python
+
+python:
+    - "3.4"
+
+install:
+    - pip install -r tests/requirements.txt
+    - pip install nose
+
+script: nosetests --with-coverage --cover-package=shcmd
+
+after_success:
+    - pip install coveralls
+    - coveralls
