@@ -3,45 +3,117 @@ import os
 import tarfile
 
 
-def tar_generator(file_list):
+class TarGenerator(object):
     """
-    generate tar file using giving file list
-
-    :param file_list: a list of file_path or (file_name, file_content) tuple
+    generate or appending some file to tar file
 
     Usage::
 
-        >>> tg = tar_generator([
-        ...     "/path/to/a",
-        ...     "/path/to/b",
-        ...     ("filename", "content")
-        ... ])
-        >>> len(b"".join(tg))
-        1024
+        >>> tg = TarGenerator(old_tar_file)
+        >>> tg.files_to_add = ["/path/to/file0", "/path/to/file1"]
+        >>> tg.add_fileobj("obj0", "")
+        >>> tarfile = b"".join(data for data in tg.generate())
+        >>> assert tarfile == tg.tar
 
     """
-    tar_buffer = io.BytesIO()
-    tar_obj = tarfile.TarFile(mode="w", fileobj=tar_buffer, dereference=True)
 
-    for file_detail in file_list:
-        last = tar_buffer.tell()
-        if isinstance(file_detail, str):
-            tar_obj.add(file_detail)
+    def __init__(self, origin=None):
+        """
+        :param origin: tar file to appending (default None, generate new tar)
+        """
+        self._tar_buffer = io.BytesIO()
+
+        self._tar_obj = tarfile.TarFile(
+            mode="w",
+            fileobj=self._tar_buffer,
+            dereference=True
+        )
+
+        self._generated = False
+        self._files_to_add = set()
+        self._ios_to_add = dict()
+
+        if origin:
+            if isinstance(origin, bytes):
+                origin = io.BytesIO(origin)
+            origin_tar = tarfile.TarFile(fileobj=origin)
+            for info in origin_tar.getmembers():
+                self._tar_obj.addfile(info, origin_tar.extractfile(info))
+
+    @property
+    def files(self):
+        """files that will be add to tar file later
+        should be tuple, list or generator that returns strings
+        """
+        ios_names = [info.name for info in self._ios_to_add.keys()]
+        return set(self.files_to_add + ios_names)
+
+    @property
+    def files_to_add(self):
+        return list(self._files_to_add)
+
+    @files_to_add.setter
+    def files_to_add(self, new_fs_list):
+        self._files_to_add = new_fs_list
+
+    def add_fileobj(self, fname, fcontent):
+        """add file like object, it will be add to tar file later
+
+        :param fname: name in tar file
+        :param fcontent: content. bytes, string, BytesIO or StringIO
+        """
+        tar_info = tarfile.TarInfo(fname)
+        if isinstance(fcontent, io.BytesIO):
+            tar_info.size = len(fcontent.getvalue())
         else:
-            content_name, content = file_detail
-            content_info = tarfile.TarInfo(content_name)
-            if isinstance(content, io.BytesIO):
-                content_info.size = len(content.getvalue())
-            else:
-                content_info.size = len(content)
-                if isinstance(content, str):
-                    content = content.encode("utf8")
-                content = io.BytesIO(content)
-            tar_obj.addfile(content_info, content)
+            tar_info.size = len(fcontent)
+            if isinstance(fcontent, str):
+                fcontent = fcontent.encode("utf8")
+            fcontent = io.BytesIO(fcontent)
+        self._ios_to_add[tar_info] = fcontent
 
-        tar_buffer.seek(last, os.SEEK_SET)
-        data = tar_buffer.read()
-        yield data
+    def generate(self):
+        """generate tar file
 
-    tar_obj.close()
-    yield tar_buffer.read()
+        ..Usage::
+
+            >>> tarfile = b"".join(data for data in tg.generate())
+        """
+        if self._tar_buffer.tell():
+            self._tar_buffer.seek(0, 0)
+            yield self._tar_buffer.read()
+
+        for fname in self._files_to_add:
+            last = self._tar_buffer.tell()
+            self._tar_obj.add(fname)
+            self._tar_buffer.seek(last, os.SEEK_SET)
+            data = self._tar_buffer.read()
+            yield data
+
+        for info, content in self._ios_to_add.items():
+            last = self._tar_buffer.tell()
+            self._tar_obj.addfile(info, content)
+            self._tar_buffer.seek(last, os.SEEK_SET)
+            data = self._tar_buffer.read()
+            yield data
+
+        self._tar_obj.close()
+        yield self._tar_buffer.read()
+        self._generated = True
+
+    @property
+    def generated(self):
+        return self._generated
+
+    @property
+    def tar(self):
+        """tar in bytes format"""
+        if not self.generated:
+            for data in self.generate():
+                pass
+        return self._tar_buffer.getvalue()
+
+    @property
+    def tar_io(self):
+        """tar in file like object"""
+        return io.BytesIO(self.tar)

@@ -45,6 +45,8 @@ class TestRun(object):
             proc.block()
             tools.eq_(mock_p.mock_calls, [])
 
+        tools.eq_(proc.content.decode("utf8"), proc.stdout)
+
     def test_iter_content(self):
         # run once
         proc = shcmd.run(self.ls_cmd, stream=True)
