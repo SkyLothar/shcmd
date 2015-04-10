@@ -77,12 +77,14 @@ class Proc(object):
 
     @property
     def stdout(self):
+        self.raise_for_error()
         """proc's stdout."""
         return self._stdout.decode(self.codec)
 
     @property
     def stderr(self):
         """proc's stderr."""
+        self.raise_for_error()
         return self._stderr.decode(self.codec)
 
     @property
@@ -93,6 +95,7 @@ class Proc(object):
     @property
     def content(self):
         """the output gathered in stdout in bytes format"""
+        self.raise_for_error()
         return self._stdout
 
     @property
@@ -101,15 +104,26 @@ class Proc(object):
         return self.return_code == 0
 
     def raise_for_error(self):
-        """raise `ShCmdError` if the proc's return_code is not 0"""
-        if not self.ok:
-            tip = "running {0} @<{1}> error, return code {2}".format(
-                " ".join(self.cmd), self.cwd, self.return_code
-            )
-            logger.error("{0}\nstdout:{1}\nstderr:{2}\n".format(
-                tip, self.stdout, self.stderr
-            ))
-            raise ShCmdError(tip)
+        """
+        raise `ShCmdError` if the proc's return_code is not 0
+        otherwise return self
+
+        ..Usage::
+
+            >>> proc = shcmd.run("ls").raise_for_error()
+            >>> proc.return_code == 0
+            True
+
+        """
+        if self.ok:
+            return self
+        tip = "running {0} @<{1}> error, return code {2}".format(
+            " ".join(self.cmd), self.cwd, self.return_code
+        )
+        logger.error("{0}\nstdout:{1}\nstderr:{2}\n".format(
+            tip, self.stdout, self.stderr
+        ))
+        raise ShCmdError(tip)
 
     @contextlib.contextmanager
     def _stream(self):
