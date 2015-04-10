@@ -121,7 +121,7 @@ class Proc(object):
             " ".join(self.cmd), self.cwd, self.return_code
         )
         logger.error("{0}\nstdout:{1}\nstderr:{2}\n".format(
-            tip, self.stdout, self.stderr
+            tip, self._stdout.decode("utf8"), self._stderr.decode("utf8")
         ))
         raise ShCmdError(tip)
 
