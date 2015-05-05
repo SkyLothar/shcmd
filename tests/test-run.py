@@ -6,6 +6,7 @@ import subprocess
 import uuid
 
 import mock
+import nose
 
 import shcmd
 from shcmd.errors import ShCmdError
@@ -86,17 +87,20 @@ class TestRun(object):
             tools.ok_(random_files.issubset(ls_result))
             tools.eq_(mock_p.mock_calls, [])
 
-    @tools.raises(ShCmdError)
-    @mock.patch("subprocess.Popen.communicate")
-    def test_error(self, mock_c):
-        mock_c.return_value = b"stdout", b"stderr"
+    @mock.patch("subprocess.Popen")
+    def test_output(self, mock_p):
+        mock_popen = mock.MagicMock()
+        mock_popen.communicate.return_value = b"stdout", b"stderr"
+        mock_popen.returncode = 0
+
+        mock_p.return_value = mock_popen
         proc = shcmd.run(
-            "ls -alh /random-dir/random",
+            "ls -alh   /no/such/dir",
             cwd="/",
             timeout=1,
             env=dict(TEST="1")
         )
-        tools.eq_(proc.cmd, ["ls", "-alh", "/random-dir/random"])
+        tools.eq_(proc.cmd, ["ls", "-alh", "/no/such/dir"])
         tools.eq_(proc.cwd, "/")
         tools.eq_(proc.timeout, 1)
         tools.eq_(proc.env, {"TEST": "1"})
@@ -106,6 +110,10 @@ class TestRun(object):
         tools.eq_(proc.content, b"stdout")
 
         proc.raise_for_error()
+
+    @nose.tools.raises(ShCmdError)
+    def test_error(self):
+        shcmd.run("ls -alh   /no/such/dir").raise_for_error()
 
     @tools.raises(subprocess.TimeoutExpired)
     def test_block_timeout(self):
