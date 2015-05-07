@@ -7,11 +7,11 @@ This lib aims to provide a Human friendly interface for subprocess.
 
 If you need piped subprocesses, give envoy_ a try.
 
-.. image:: https://travis-ci.org/SkyLothar/shcmd.svg?branch=master
+.. image:: https://img.shields.io/travis/SkyLothar/shcmd/master.svg?style=flat-square
     :target: https://travis-ci.org/SkyLothar/shcmd
-.. image:: https://img.shields.io/coveralls/SkyLothar/shcmd/master.svg
+.. image:: https://img.shields.io/coveralls/SkyLothar/shcmd/master.svg?style=flat-square
     :target: https://coveralls.io/r/SkyLothar/shcmd
-.. image:: https://pypip.in/version/shcmd/badge.svg?style=flat
+.. image:: https://img.shields.io/pypi/v/shcmd.svg?style=flat-square
     :target: https://pypi.python.org/pypi/shcmd
 
 Usage
