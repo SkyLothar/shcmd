@@ -123,7 +123,7 @@ class Proc(object):
         logger.error("{0}\nstdout:{1}\nstderr:{2}\n".format(
             tip, self._stdout.decode("utf8"), self._stderr.decode("utf8")
         ))
-        raise ShCmdError(tip)
+        raise ShCmdError(self)
 
     @contextlib.contextmanager
     def _stream(self):
@@ -151,13 +151,13 @@ class Proc(object):
             timer.start()
             yield proc
         finally:
-            if timer:
+            if timer is not None:
                 timer.cancel()
 
-    def iter_lines(self):
+    def iter_lines(self, warn_only=False):
         """yields stdout text, line by line."""
         remain = ""
-        for data in self.iter_content(LINE_CHUNK_SIZE):
+        for data in self.iter_content(LINE_CHUNK_SIZE, warn_only=True):
             line_break_found = data[-1] in (b"\n", b"\r")
             lines = data.decode(self.codec).splitlines()
             lines[0] = remain + lines[0]
@@ -168,7 +168,10 @@ class Proc(object):
         if remain:
             yield remain
 
-    def iter_content(self, chunk_size=1):
+        if not warn_only:
+            self.raise_for_error()
+
+    def iter_content(self, chunk_size=1, warn_only=False):
         """
         yields stdout data, chunk by chunk
 
@@ -206,6 +209,9 @@ class Proc(object):
             self._stderr = proc.stderr.read()
             self._stdout = data
 
+            if not warn_only:
+                self.raise_for_error()
+
     def block(self):
         """blocked executation."""
         if self._return_code is None:
@@ -216,3 +222,8 @@ class Proc(object):
             )
             self._stdout, self._stderr = proc.communicate(timeout=self.timeout)
             self._return_code = proc.returncode
+
+    def __str__(self):
+        return "<{0}@{1}  ret:{2}>".format(
+            " ".join(self.cmd), self.cwd, self.return_code
+        )
