@@ -1,6 +1,7 @@
 # -*- coding: utf8 -*-
 
 import contextlib
+import functools
 import io
 import logging
 import subprocess
@@ -21,6 +22,15 @@ def kill_proc(proc, cmd, started_at):
     """
     if proc.returncode is None:
         proc.kill()
+
+
+def output(func):
+    @functools.wraps(func)
+    def checked_output(proc):
+        if not proc.finished:
+            raise ShCmdError(proc)
+        return func(proc)
+    return property(checked_output)
 
 
 class Proc(object):
@@ -52,8 +62,13 @@ class Proc(object):
         self._cmd = cmd
         self._cwd = cwd
         self._env = env
+        self._finished = False
         self._timeout = timeout
         self._return_code = self._stdout = self._stderr = None
+
+    @property
+    def finished(self):
+        return self._finished
 
     @property
     def cmd(self):
@@ -75,13 +90,12 @@ class Proc(object):
         """the proc's timeout setting."""
         return self._timeout
 
-    @property
+    @output
     def stdout(self):
-        self.raise_for_error()
         """proc's stdout."""
         return self._stdout.decode(self.codec)
 
-    @property
+    @output
     def stderr(self):
         """proc's stderr."""
         self.raise_for_error()
@@ -92,10 +106,9 @@ class Proc(object):
         """proc's return_code"""
         return self._return_code
 
-    @property
+    @output
     def content(self):
         """the output gathered in stdout in bytes format"""
-        self.raise_for_error()
         return self._stdout
 
     @property
@@ -170,6 +183,7 @@ class Proc(object):
 
         if not warn_only:
             self.raise_for_error()
+        self._finished = True
 
     def iter_content(self, chunk_size=1, warn_only=False):
         """
@@ -211,8 +225,9 @@ class Proc(object):
 
             if not warn_only:
                 self.raise_for_error()
+            self._finished = True
 
-    def block(self):
+    def block(self, warn_only=False):
         """blocked executation."""
         if self._return_code is None:
             proc = subprocess.Popen(
@@ -222,6 +237,10 @@ class Proc(object):
             )
             self._stdout, self._stderr = proc.communicate(timeout=self.timeout)
             self._return_code = proc.returncode
+
+            if not warn_only:
+                self.raise_for_error()
+            self._finished = True
 
     def __str__(self):
         return "<{0}@{1}  ret:{2}>".format(
