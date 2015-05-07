@@ -64,11 +64,16 @@ class Proc(object):
         self._env = env
         self._finished = False
         self._timeout = timeout
+        self._state = "not executed"
         self._return_code = self._stdout = self._stderr = None
 
     @property
     def finished(self):
         return self._finished
+
+    @property
+    def state(self):
+        return self._state
 
     @property
     def cmd(self):
@@ -191,6 +196,7 @@ class Proc(object):
 
         :param chunk_size: size of each chunk (in bytes)
         """
+        self._state = "not finished"
         if self.return_code is not None:
             stdout = io.BytesIO(self._stdout)
             data = stdout.read(chunk_size)
@@ -209,9 +215,9 @@ class Proc(object):
                     data += chunk
 
                 if proc.returncode == -9:
-                    raise subprocess.TimeoutExpired(
-                        proc.args, time.time() - started_at
-                    )
+                    elapsed = time.time() - started_at
+                    self._state = "timeouted"
+                    raise subprocess.TimeoutExpired(proc.args, elapsed)
 
                 chunk = proc.stdout.read(chunk_size)
                 while chunk:
@@ -226,9 +232,11 @@ class Proc(object):
             if not warn_only:
                 self.raise_for_error()
             self._finished = True
+            self._state = "finished"
 
     def block(self, warn_only=False):
         """blocked executation."""
+        self._state = "not finished"
         if self._return_code is None:
             proc = subprocess.Popen(
                 self.cmd, cwd=self.cwd, env=self.env,
@@ -243,6 +251,6 @@ class Proc(object):
             self._finished = True
 
     def __str__(self):
-        return "<{0}@{1}  ret:{2}>".format(
-            " ".join(self.cmd), self.cwd, self.return_code
+        return "<{0}@{1}  ret: {2} state: {3}>".format(
+            " ".join(self.cmd), self.cwd, self.return_code, self.state
         )
