@@ -14,6 +14,7 @@ from .errors import ShCmdError
 logger = logging.getLogger(__name__)
 
 LINE_CHUNK_SIZE = 1024
+FINISHED = "finished"
 
 
 def kill_proc(proc, cmd, started_at):
@@ -62,14 +63,13 @@ class Proc(object):
         self._cmd = cmd
         self._cwd = cwd
         self._env = env
-        self._finished = False
         self._timeout = timeout
         self._state = "not executed"
         self._return_code = self._stdout = self._stderr = None
 
     @property
     def finished(self):
-        return self._finished
+        return self._state == FINISHED
 
     @property
     def state(self):
@@ -186,9 +186,9 @@ class Proc(object):
         if remain:
             yield remain
 
+        self._state = FINISHED
         if not warn_only:
             self.raise_for_error()
-        self._finished = True
 
     def iter_content(self, chunk_size=1, warn_only=False):
         """
@@ -229,10 +229,9 @@ class Proc(object):
             self._stderr = proc.stderr.read()
             self._stdout = data
 
+            self._state = FINISHED
             if not warn_only:
                 self.raise_for_error()
-            self._finished = True
-            self._state = "finished"
 
     def block(self, warn_only=False):
         """blocked executation."""
@@ -246,9 +245,9 @@ class Proc(object):
             self._stdout, self._stderr = proc.communicate(timeout=self.timeout)
             self._return_code = proc.returncode
 
+            self._state = FINISHED
             if not warn_only:
                 self.raise_for_error()
-            self._finished = True
 
     def __str__(self):
         return "<{0}@{1}  ret: {2} state: {3}>".format(
