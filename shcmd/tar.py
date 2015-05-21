@@ -69,7 +69,7 @@ class TarGenerator(object):
             tar_info.size = len(fcontent.getvalue())
             fcontent = io.BytesIO(fcontent.getvalue().encode("utf8"))
         else:
-            if getattr(fcontent, "readable", False):
+            if hasattr(fcontent, "readable"):
                 fcontent = fcontent
             tar_info.size = len(fcontent)
             if isinstance(fcontent, str):
