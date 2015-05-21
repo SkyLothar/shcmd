@@ -65,6 +65,9 @@ class TarGenerator(object):
         tar_info = tarfile.TarInfo(fname)
         if isinstance(fcontent, io.BytesIO):
             tar_info.size = len(fcontent.getvalue())
+        elif isinstance(fcontent, io.StringIO):
+            tar_info.size = len(fcontent.getvalue())
+            fcontent = io.BytesIO(fcontent.getvalue().encode("utf8"))
         else:
             tar_info.size = len(fcontent)
             if isinstance(fcontent, str):
