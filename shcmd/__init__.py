@@ -1,4 +1,4 @@
-__version__ = "0.4.0"
+__version__ = "0.4.1"
 __author__ = "SkyLothar"
 __email__ = "allothar@gmail.com"
 __url__ = "https://github.com/skylothar/shcmd"
