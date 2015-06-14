@@ -245,9 +245,9 @@ class Proc(object):
             self._stdout, self._stderr = proc.communicate(timeout=self.timeout)
             self._return_code = proc.returncode
 
-            self._state = FINISHED
-            if not warn_only:
-                self.raise_for_error()
+        self._state = FINISHED
+        if not warn_only:
+            self.raise_for_error()
 
     def __str__(self):
         return "<{0}@{1}  ret: {2} state: {3}>".format(
