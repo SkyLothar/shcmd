@@ -1,17 +1,23 @@
-__version__ = "0.4.1"
+__version__ = "0.5.0"
 __author__ = "SkyLothar"
 __email__ = "allothar@gmail.com"
 __url__ = "https://github.com/skylothar/shcmd"
 
 import os
 
-__all__ = ["cd", "cd_to", "mkdir", "rm", "run", "TarGenerator", "ShCmdError"]
+__all__ = [
+    "cd", "cd_to",
+    "mkdir", "rm", "run", "tailf",
+    "TarGenerator",
+    "ShCmdError"
+]
 
 from .cmd import cd, cd_to, mkdir, rm
 from .errors import ShCmdError
 from .proc import Proc
 from .tar import TarGenerator
 from .utils import expand_args
+from .tailf import tailf
 
 
 DEFAULT_TIMEOUT = 60
