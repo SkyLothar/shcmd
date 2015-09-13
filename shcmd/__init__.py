@@ -40,7 +40,5 @@ def run(cmd, cwd=None, env=None, timeout=None, stream=False, warn_only=False):
     )
 
     if not stream:
-        proc.block()
-        if not warn_only:
-            proc.raise_for_error()
+        proc.block(warn_only=warn_only)
     return proc
