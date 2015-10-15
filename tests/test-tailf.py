@@ -34,6 +34,8 @@ def test_tailf():
                 os.remove(TEST_FILE)
 
     try:
+        with open(TEST_FILE, "wb"):
+            pass
         writer = threading.Thread(target=fake_writer)
         writer.start()
         result = [
