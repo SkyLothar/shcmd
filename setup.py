@@ -5,7 +5,7 @@ import sys
 
 from codecs import open
 
-__version__ = "0.5.2"
+__version__ = "0.5.3"
 __author__ = "SkyLothar"
 __email__ = "allothar@gmail.com"
 __url__ = "https://github.com/skylothar/shcmd"

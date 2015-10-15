@@ -3,7 +3,12 @@ __author__ = "SkyLothar"
 __email__ = "allothar@gmail.com"
 __url__ = "https://github.com/skylothar/shcmd"
 
+import sys
 import os
+
+version = sys.version
+if version[0] != 3:
+    raise ValueError("unsupported python version: {0}".format(version))
 
 __all__ = [
     "cd", "cd_to",

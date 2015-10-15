@@ -95,6 +95,10 @@ class Proc(object):
         """the proc's timeout setting."""
         return self._timeout
 
+    @property
+    def data(self):
+        return self._stdout
+
     @output
     def stdout(self):
         """proc's stdout."""
