@@ -6,8 +6,8 @@ __url__ = "https://github.com/skylothar/shcmd"
 import sys
 import os
 
-version = sys.version
-if version[0] != 3:
+version = sys.version_info
+if version.major != 3:
     raise ValueError("unsupported python version: {0}".format(version))
 
 __all__ = [
